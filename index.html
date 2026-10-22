@@ -26,7 +26,7 @@
     </div>
 
     <script>
-        // Tu URL de Google Apps Script terminada en /exec
+        // REEMPLAZA ESTA LÍNEA CON TU URL REAL DE APPS SCRIPT
         const API_URL = "https://script.google.com/macros/s/TU_ID_DE_APPS_SCRIPT/exec";
 
         async function verificarCupon() {
@@ -45,13 +45,13 @@
 
                 if (result.success) {
                     const n = result.data;
-                    const isPagado = n.estatus.toLowerCase() === 'pagado';
+                    const isPagado = String(n.estatus).toLowerCase() === 'pagado';
                     
-                    // Enlace directo a WhatsApp con mensaje precargado para medir la intención
                     let botonWhatsAppHTML = '';
                     if (isPagado && n.telefono) {
+                        const numLimpio = String(n.telefono).replace(/[^0-9]/g, '');
                         const mensaje = encodeURIComponent(`¡Hola! Vi la promoción "${n.descripcion}" en Cupun y quiero hacer válido mi cupón con código: ${n.codigoUnico}`);
-                        botonWhatsAppHTML = `<a href="https://wa.me/${n.telefono}?text=${mensaje}" target="_blank" class="btn-wa">💬 Reclamar Cupón por WhatsApp</a>`;
+                        botonWhatsAppHTML = `<a href="https://wa.me/${numLimpio}?text=${mensaje}" target="_blank" class="btn-wa">💬 Reclamar Cupón por WhatsApp</a>`;
                     }
 
                     container.className = `card ${isPagado ? 'valid' : 'invalid'}`;
