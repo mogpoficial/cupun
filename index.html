@@ -26,8 +26,7 @@
     </div>
 
     <script>
-        // URL de tu implementación de Google Apps Script
-        const API_URL = "https://script.google.com/macros/s/AKfycbzEVzskqV-y-YbiTW5X95ta2cgbVQ4CcHP0zYt5RMnJ1DnlP6KM0MH53kMy1nJp74hucw/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbwTYmqvvM2uZJmLputON7DlW4nPba9QHFQIVXU38GdMe01XcfzE_sMJoBd0tdXchFRHbQ/exec";
         
         let globalNegocioId = "";
         let globalTelefono = "";
@@ -44,7 +43,7 @@
             }
 
             try {
-                // Registrar escaneo/visita en Google Sheets
+                // Registrar escaneo/visita
                 const response = await fetch(`${API_URL}?negocio=${negocio}&accion=visita`);
                 const result = await response.json();
 
@@ -85,21 +84,21 @@
             }
         }
 
-        // Función con envío prioritario para asegurar la métrica antes de saltar a WhatsApp
-        function registrarClicWhatsApp() {
-            const urlClic = `${API_URL}?negocio=${globalNegocioId}&accion=clic`;
-            
-            // Intentar envío prioritario en navegador
-            if (navigator.sendBeacon) {
-                navigator.sendBeacon(urlClic);
-            } else {
-                fetch(urlClic, { mode: 'no-cors', keepalive: true });
+        // Función segura para registrar el clic antes de abrir WhatsApp
+        async function registrarClicWhatsApp() {
+            const btn = document.querySelector('.btn-wa');
+            btn.innerText = "Registrando y abriendo...";
+            btn.disabled = true;
+
+            try {
+                // Esperamos a que Google Sheets reciba y guarde el clic obligatoriamente
+                await fetch(`${API_URL}?negocio=${globalNegocioId}&accion=clic`);
+            } catch (e) {
+                console.log("Error registrando clic, procediendo a abrir WhatsApp.");
             }
             
-            // Pausa de 150ms para permitir al socket de red registrar el evento antes del cambio de app
-            setTimeout(() => {
-                window.location.href = `https://wa.me/${globalTelefono}?text=${globalMensaje}`;
-            }, 150);
+            // Abrimos WhatsApp de forma segura
+            window.location.href = `https://wa.me/${globalTelefono}?text=${globalMensaje}`;
         }
 
         verificarCupon();
