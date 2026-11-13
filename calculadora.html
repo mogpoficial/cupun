@@ -61,9 +61,11 @@
         }
 
         .header-logo h1 {
-            font-size: 24px;
+            font-size: 26px;
             margin: 10px 0 5px 0;
-            color: var(--text-main);
+            color: var(--cupun-pink);
+            font-weight: 800;
+            letter-spacing: 1px;
         }
 
         .header-logo p {
@@ -83,7 +85,6 @@
             text-align: center;
         }
 
-        /* Estados de Acceso */
         .screen { display: none; }
         .screen.active { display: block; }
 
@@ -91,9 +92,14 @@
             background: #FEE2E2;
             border: 1px solid #FCA5A5;
             color: #991B1B;
-            padding: 20px;
+            padding: 25px;
             border-radius: 14px;
             text-align: center;
+        }
+
+        .alert-expired h3 {
+            margin-top: 0;
+            color: var(--cupun-pink);
         }
 
         .btn-action {
@@ -140,7 +146,7 @@
         .tooltip-icon {
             cursor: pointer;
             color: var(--cupun-blue);
-            font-size: 13px;
+            font-size: 12px;
             background: #E0F2FE;
             width: 18px;
             height: 18px;
@@ -160,8 +166,8 @@
             border-radius: 6px;
             padding: 6px;
             position: absolute;
-            z-index: 1;
-            bottom: 110%;
+            z-index: 10;
+            bottom: 115%;
             right: 0;
             font-size: 11px;
             opacity: 0;
@@ -228,16 +234,16 @@
             
             <!-- Pantalla de Carga -->
             <div id="screen-loading" class="screen active">
-                <div class="loading">Verificando membresía Cupun...</div>
+                <div class="loading">Validando membresía Cupun...</div>
             </div>
 
             <!-- Pantalla Vencida -->
             <div id="screen-expired" class="screen">
                 <div class="alert-expired">
                     <h3>¡Membresía Cupun Vencida!</h3>
-                    <p>El acceso a esta herramienta de cálculo ha expirado. Renueva tu mensualidad para seguir disfrutando de los beneficios exclusivos.</p>
+                    <p>El acceso a esta calculadora de precios ha expirado o el código no es válido. Renueva tu mensualidad para seguir disfrutando de este beneficio exclusivo.</p>
                 </div>
-                <a href="https://wa.me/5214430000000?text=Hola,%20quiero%20renovar%20mi%20membresía%20Cupun%20para%20reactivar%20mi%20calculadora." class="btn-action btn-wa" target="_blank">Renovar por WhatsApp</a>
+                <a href="https://wa.me/5214431234567?text=Hola,%20quiero%20renovar%20mi%20membresía%20Cupun%20para%20reactivar%20mi%20calculadora." class="btn-action btn-wa" target="_blank">Renovar por WhatsApp</a>
             </div>
 
             <!-- Pantalla Principal de la Calculadora -->
@@ -252,9 +258,9 @@
                 <div class="form-group">
                     <div class="label-container">
                         <label>Costo Base / Insumo Principal ($)</label>
-                        <span class="tooltip-icon" title="">?</span>
+                        <span class="tooltip-icon">?</span>
                     </div>
-                    <span class="tooltip-text">Lo que te cuesta producir el artículo o lo que vale el insumo principal del servicio (ej. granos de café, aceite de masaje, prenda de mayoreo).</span>
+                    <span class="tooltip-text">Lo que te cuesta producir el artículo o lo que vale el insumo principal del servicio (café, aceites de spa, prenda de mayoreo).</span>
                     <input type="number" id="costoBase" value="0" min="0" step="0.5" oninput="calcular()">
                 </div>
 
@@ -278,10 +284,10 @@
 
                 <div class="form-group">
                     <div class="label-container">
-                        <label>Mano de Obra / Comisión Operativa ($)</label>
+                        <label>Mano de Obra / Operación ($)</label>
                         <span class="tooltip-icon">?</span>
                     </div>
-                    <span class="tooltip-text">Pago directo al colaborador, terapeuta o estilista que ejecuta el servicio, o comisión bancaria por cobro.</span>
+                    <span class="tooltip-text">Pago directo al colaborador, terapeuta o estilista que ejecuta el servicio (si aplica).</span>
                     <input type="number" id="operacion" value="0" min="0" step="0.5" oninput="calcular()">
                 </div>
 
@@ -294,7 +300,7 @@
                     <input type="number" id="margenDeseado" value="40" min="1" max="99" oninput="calcular()">
                 </div>
 
-                <div class="results-box">
+                <div classs="results-box" style="background: #F8FAFC; border: 2px dashed #CBD5E1; border-radius: 14px; padding: 16px; margin-top: 24px;">
                     <div class="result-row">
                         <span>Costo Total Real:</span>
                         <strong id="resCostoTotal">$0.00</strong>
@@ -316,7 +322,7 @@
     </div>
 
     <script>
-        // CONECTA AQUÍ LA URL DE TU GOOGLE APPS SCRIPT (/exec)
+        // PEGA AQUÍ LA URL DE TU GOOGLE APPS SCRIPT (/exec)
         const API_URL = "https://script.google.com/macros/s/AKfycbwg7zHXgmy_aTcOGxVrEbtkJcXRrihIJoiZaOa_mXDELfjQWulrmZbnOSU_5aN-06r4Rw/exec";
 
         window.onload = async function() {
