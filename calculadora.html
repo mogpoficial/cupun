@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Precios - Cupun</title>
+    <style>
+        :root {
+            --cupun-pink: #EF3355;
+            --cupun-orange: #FF9233;
+            --cupun-yellow: #FFD100;
+            --cupun-green: #85C429;
+            --cupun-blue: #288BD9;
+            --bg-color: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Barra superior multicolor Cupun */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--cupun-pink), var(--cupun-orange), var(--cupun-yellow), var(--cupun-green), var(--cupun-blue));
+        }
+
+        .header-logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header-logo h1 {
+            font-size: 24px;
+            margin: 10px 0 5px 0;
+            color: var(--text-main);
+        }
+
+        .header-logo p {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .business-badge {
+            background: #F1F5F9;
+            border-radius: 12px;
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--cupun-blue);
+            text-align: center;
+        }
+
+        /* Estados de Acceso */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        .alert-expired {
+            background: #FEE2E2;
+            border: 1px solid #FCA5A5;
+            color: #991B1B;
+            padding: 20px;
+            border-radius: 14px;
+            text-align: center;
+        }
+
+        .btn-action {
+            display: block;
+            width: 100%;
+            background-color: var(--cupun-pink);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            margin-top: 20px;
+            box-sizing: border-box;
+            transition: opacity 0.2s;
+        }
+
+        .btn-action:hover { opacity: 0.9; }
+        .btn-wa { background-color: #25D366; margin-top: 15px; }
+
+        /* Campos de la Calculadora */
+        .form-group {
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .label-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        /* Tooltip interactivo */
+        .tooltip-icon {
+            cursor: pointer;
+            color: var(--cupun-blue);
+            font-size: 13px;
+            background: #E0F2FE;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .tooltip-text {
+            visibility: hidden;
+            width: 220px;
+            background-color: #334155;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 6px;
+            position: absolute;
+            z-index: 1;
+            bottom: 110%;
+            right: 0;
+            font-size: 11px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .form-group:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #E2E8F0;
+            border-radius: 10px;
+            font-size: 15px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--cupun-blue);
+        }
+
+        /* Resultados */
+        .results-box {
+            background: #F8FAFC;
+            border: 2px dashed #CBD5E1;
+            border-radius: 14px;
+            padding: 16px;
+            margin-top: 24px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .result-row.highlight {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--cupun-pink);
+            border-top: 1px solid #E2E8F0;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="card">
+            
+            <!-- Pantalla de Carga -->
+            <div id="screen-loading" class="screen active">
+                <div class="loading">Verificando membresía Cupun...</div>
+            </div>
+
+            <!-- Pantalla Vencida -->
+            <div id="screen-expired" class="screen">
+                <div class="alert-expired">
+                    <h3>¡Membresía Cupun Vencida!</h3>
+                    <p>El acceso a esta herramienta de cálculo ha expirado. Renueva tu mensualidad para seguir disfrutando de los beneficios exclusivos.</p>
+                </div>
+                <a href="https://wa.me/5214430000000?text=Hola,%20quiero%20renovar%20mi%20membresía%20Cupun%20para%20reactivar%20mi%20calculadora." class="btn-action btn-wa" target="_blank">Renovar por WhatsApp</a>
+            </div>
+
+            <!-- Pantalla Principal de la Calculadora -->
+            <div id="screen-calc" class="screen">
+                <div class="header-logo">
+                    <h1>CUPUN</h1>
+                    <p>Calculadora Inteligente de Precios</p>
+                </div>
+
+                <div class="business-badge" id="business-name">Negocio: Cargando...</div>
+
+                <div class="form-group">
+                    <div class="label-container">
+                        <label>Costo Base / Insumo Principal ($)</label>
+                        <span class="tooltip-icon" title="">?</span>
+                    </div>
+                    <span class="tooltip-text">Lo que te cuesta producir el artículo o lo que vale el insumo principal del servicio (ej. granos de café, aceite de masaje, prenda de mayoreo).</span>
+                    <input type="number" id="costoBase" value="0" min="0" step="0.5" oninput="calcular()">
+                </div>
+
+                <div class="form-group">
+                    <div class="label-container">
+                        <label>Empaque / Insumos Secos ($)</label>
+                        <span class="tooltip-icon">?</span>
+                    </div>
+                    <span class="tooltip-text">Bolsas, cajas, etiquetas, vasos, toallas desechables o elementos de presentación que se van con el producto o servicio.</span>
+                    <input type="number" id="empaque" value="0" min="0" step="0.5" oninput="calcular()">
+                </div>
+
+                <div class="form-group">
+                    <div class="label-container">
+                        <label>Logística / Envío / Traslado ($)</label>
+                        <span class="tooltip-icon">?</span>
+                    </div>
+                    <span class="tooltip-text">Costo de paquetería, flete, o proporción de gasolina y transporte invertido en la entrega o recolección.</span>
+                    <input type="number" id="logistica" value="0" min="0" step="0.5" oninput="calcular()">
+                </div>
+
+                <div class="form-group">
+                    <div class="label-container">
+                        <label>Mano de Obra / Comisión Operativa ($)</label>
+                        <span class="tooltip-icon">?</span>
+                    </div>
+                    <span class="tooltip-text">Pago directo al colaborador, terapeuta o estilista que ejecuta el servicio, o comisión bancaria por cobro.</span>
+                    <input type="number" id="operacion" value="0" min="0" step="0.5" oninput="calcular()">
+                </div>
+
+                <div class="form-group">
+                    <div class="label-container">
+                        <label>Margen de Ganancia Deseado (%)</label>
+                        <span class="tooltip-icon">?</span>
+                    </div>
+                    <span class="tooltip-text">El porcentaje de utilidad neta que deseas obtener sobre el precio final de venta (ej. 40%).</span>
+                    <input type="number" id="margenDeseado" value="40" min="1" max="99" oninput="calcular()">
+                </div>
+
+                <div class="results-box">
+                    <div class="result-row">
+                        <span>Costo Total Real:</span>
+                        <strong id="resCostoTotal">$0.00</strong>
+                    </div>
+                    <div class="result-row">
+                        <span>Utilidad Neta Esperada:</span>
+                        <strong id="resUtilidad" style="color: var(--cupun-green);">$0.00</strong>
+                    </div>
+                    <div class="result-row highlight">
+                        <span>Precio de Venta Sugerido:</span>
+                        <strong id="resPrecioVenta">$0.00</strong>
+                    </div>
+                </div>
+
+                <button class="btn-action" onclick="copiarResumen()">Copiar Resumen para WhatsApp</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // CONECTA AQUÍ LA URL DE TU GOOGLE APPS SCRIPT (/exec)
+        const API_URL = "https://script.google.com/macros/s/TU_URL_DE_APPS_SCRIPT/exec";
+
+        window.onload = async function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const clienteId = urlParams.get('cliente') || urlParams.get('n') || urlParams.get('negocio');
+
+            if (!clienteId) {
+                mostrarPantalla('screen-expired');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}?cliente=${clienteId}`);
+                const result = await response.json();
+
+                if (result.success && result.data.estatus === "Pagado") {
+                    document.getElementById('business-name').innerText = `Negocio: ${result.data.nombre}`;
+                    mostrarPantalla('screen-calc');
+                    calcular();
+                } else {
+                    mostrarPantalla('screen-expired');
+                }
+            } catch (error) {
+                console.error("Error al validar membresía:", error);
+                mostrarPantalla('screen-expired');
+            }
+        };
+
+        function mostrarPantalla(idPantalla) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(idPantalla).classList.add('active');
+        }
+
+        function calcular() {
+            const costoBase = parseFloat(document.getElementById('costoBase').value) || 0;
+            const empaque = parseFloat(document.getElementById('empaque').value) || 0;
+            const logistica = parseFloat(document.getElementById('logistica').value) || 0;
+            const operacion = parseFloat(document.getElementById('operacion').value) || 0;
+            const margenDeseado = parseFloat(document.getElementById('margenDeseado').value) || 40;
+
+            const costoTotal = costoBase + empaque + logistica + operacion;
+            
+            // Fórmula de Precio Sugerido basada en Margen sobre venta
+            const margenDecimal = margenDeseado / 100;
+            const precioVenta = margenDecimal >= 1 ? costoTotal : costoTotal / (1 - margenDecimal);
+            const utilidad = precioVenta - costoTotal;
+
+            document.getElementById('resCostoTotal').innerText = `$${costoTotal.toFixed(2)}`;
+            document.getElementById('resUtilidad').innerText = `$${utilidad.toFixed(2)}`;
+            document.getElementById('resPrecioVenta').innerText = `$${precioVenta.toFixed(2)}`;
+        }
+
+        function copiarResumen() {
+            const precio = document.getElementById('resPrecioVenta').innerText;
+            const costo = document.getElementById('resCostoTotal').innerText;
+            const texto = `📊 *Cálculo de Precio - Cupun*\n• Costo Total: ${costo}\n• *Precio Sugerido de Venta: ${precio}*`;
+            
+            navigator.clipboard.writeText(texto).then(() => {
+                alert("¡Resumen copiado al portapapeles listo para enviar!");
+            });
+        }
+    </script>
+</body>
+</html>
