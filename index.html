@@ -13,9 +13,19 @@
         .badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; margin-bottom: 15px; }
         .badge-valid { background: #e8f8f5; color: #27ae60; }
         .badge-invalid { background: #ffd2d2; color: #c0392b; }
-        .code-box { background: #f8f9fa; border: 1px dashed #cbd5e1; padding: 12px; border-radius: 8px; margin-top: 20px; font-weight: bold; color: #1e293b; }
-        .btn-wa { display: inline-block; background-color: #25d366; color: white; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; margin-top: 15px; width: 100%; box-sizing: border-box; font-size: 15px; border: none; cursor: pointer; }
+        .code-box { background: #f8f9fa; border: 1px dashed #cbd5e1; padding: 12px; border-radius: 8px; margin-top: 15px; font-weight: bold; color: #1e293b; }
+        
+        /* Estilos para el selector de fecha y botones */
+        .booking-section { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 10px; margin-top: 15px; text-align: left; }
+        .booking-section label { font-size: 12px; font-weight: bold; color: #475569; display: block; margin-bottom: 5px; }
+        .booking-inputs { display: flex; gap: 8px; }
+        .booking-inputs input { width: 50%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; box-sizing: border-box; }
+        
+        .btn-wa { display: block; background-color: #25d366; color: white; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; margin-top: 12px; width: 100%; box-sizing: border-box; font-size: 15px; text-align: center; transition: background 0.2s; }
         .btn-wa:hover { background-color: #20ba5a; }
+        .btn-wa.reserve { background-color: #0284c7; } /* Azul elegante para distinguir la reserva */
+        .btn-wa.reserve:hover { background-color: #0369a1; }
+        
         .loading { font-size: 16px; color: #64748b; }
     </style>
 </head>
@@ -26,11 +36,8 @@
     </div>
 
     <script>
+        // REEMPLAZA ESTA LÍNEA CON TU URL REAL DE APPS SCRIPT
         const API_URL = "https://script.google.com/macros/s/AKfycbwjTRREO_-YcLnRUZiJqxqEqsD6EGG4mmTLL6bn9vmq4_afbdx_M5YYrIIaLOWJepup4Q/exec";
-        
-        let globalNegocioId = "";
-        let globalTelefono = "";
-        let globalMensaje = "";
 
         async function verificarCupon() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -43,21 +50,29 @@
             }
 
             try {
-                // Registrar escaneo/visita
-                const response = await fetch(`${API_URL}?negocio=${negocio}&accion=visita`);
+                const response = await fetch(`${API_URL}?negocio=${negocio}`);
                 const result = await response.json();
 
                 if (result.success) {
                     const n = result.data;
                     const isPagado = String(n.estatus).toLowerCase() === 'pagado';
                     
-                    globalNegocioId = n.id;
-                    globalTelefono = String(n.telefono).replace(/[^0-9]/g, '');
-                    globalMensaje = encodeURIComponent(`¡Hola! Vi la promoción "${n.descripcion}" en Cupun y quiero hacer válido mi cupón con código: ${n.codigoUnico}`);
-
-                    let botonWhatsAppHTML = '';
+                    let interactivoHTML = '';
                     if (isPagado && n.telefono) {
-                        botonWhatsAppHTML = `<button onclick="registrarClicWhatsApp()" class="btn-wa">💬 Reclamar Cupón por WhatsApp</button>`;
+                        const numLimpio = String(n.telefono).replace(/[^0-9]/g, '');
+                        
+                        interactivoHTML = `
+                            <div class="booking-section">
+                                <label>📅 ¿Deseas agendar fecha y hora? (Opcional)</label>
+                                <div class="booking-inputs">
+                                    <input type="date" id="cita-fecha">
+                                    <input type="time" id="cita-hora">
+                                </div>
+                            </div>
+                            <a href="#" id="btn-accion" class="btn-wa" onclick="enviarWhatsApp(event, '${numLimpio}', '${n.descripcion}', '${n.codigoUnico}')">
+                                💬 Reclamar Cupón por WhatsApp
+                            </a>
+                        `;
                     }
 
                     container.className = `card ${isPagado ? 'valid' : 'invalid'}`;
@@ -74,8 +89,29 @@
                         <div class="code-box">
                             Código único: <br><span style="color:#2563eb; font-size:18px;">${n.codigoUnico}</span>
                         </div>
-                        ${botonWhatsAppHTML}
+                        ${interactivoHTML}
                     `;
+
+                    // Si el usuario selecciona fecha/hora, el botón cambia dinámicamente de texto y color
+                    if (isPagado && n.telefono) {
+                        const fechaInput = document.getElementById('cita-fecha');
+                        const horaInput = document.getElementById('cita-hora');
+                        const btnAccion = document.getElementById('btn-accion');
+
+                        const actualizarBoton = () => {
+                            if (fechaInput.value || horaInput.value) {
+                                btnAccion.innerHTML = `📅 Reservar cita por WhatsApp`;
+                                btnAccion.classList.add('reserve');
+                            } else {
+                                btnAccion.innerHTML = `💬 Reclamar Cupón por WhatsApp`;
+                                btnAccion.classList.remove('reserve');
+                            }
+                        };
+
+                        fechaInput.addEventListener('change', actualizarBoton);
+                        horaInput.addEventListener('change', actualizarBoton);
+                    }
+
                 } else {
                     container.innerHTML = `<h3 style="color:#e74c3c;">Negocio no encontrado</h3><p>El identificador no existe en el directorio.</p>`;
                 }
@@ -84,21 +120,21 @@
             }
         }
 
-        // Función segura para registrar el clic antes de abrir WhatsApp
-        async function registrarClicWhatsApp() {
-            const btn = document.querySelector('.btn-wa');
-            btn.innerText = "Registrando y abriendo...";
-            btn.disabled = true;
+        // Función que arma el mensaje dinámico para WhatsApp dependiendo de si eligió cita o solo cupón
+        function enviarWhatsApp(event, telefono, descripcion, codigoUnico) {
+            event.preventDefault();
+            const fecha = document.getElementById('cita-fecha').value;
+            const hora = document.getElementById('cita-hora').value;
 
-            try {
-                // Esperamos a que Google Sheets reciba y guarde el clic obligatoriamente
-                await fetch(`${API_URL}?negocio=${globalNegocioId}&accion=clic`);
-            } catch (e) {
-                console.log("Error registrando clic, procediendo a abrir WhatsApp.");
+            let mensaje = "";
+            if (fecha || hora) {
+                mensaje = `¡Hola! Vi la promoción "${descripcion}" en Cupun, mi código es ${codigoUnico} y quiero *reservar cita* para el día ${fecha || 'por definir'} a las ${hora || 'por definir'}.`;
+            } else {
+                mensaje = `¡Hola! Vi la promoción "${descripcion}" en Cupun y quiero hacer válido mi cupón con código: ${codigoUnico}`;
             }
-            
-            // Abrimos WhatsApp de forma segura
-            window.location.href = `https://wa.me/${globalTelefono}?text=${globalMensaje}`;
+
+            const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
+            window.open(url, '_blank');
         }
 
         verificarCupon();
