@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tarjeta Digital | CUPUN</title>
+  <style>
+    :root { --primary: #EE3355; --dark: #1E1E2C; --bg: #F6F7FB; --card: #FFFFFF; --muted: #6C7280; }
+    * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--dark); display: flex; justify-content: center; padding: 20px 14px; }
+    .container { width: 100%; max-width: 430px; background: var(--card); border-radius: 22px; box-shadow: 0 12px 30px rgba(0,0,0,0.08); overflow: hidden; text-align: center; }
+    .header { background: linear-gradient(135deg, #1E1E2C, #2E2E44); color: #fff; padding: 28px 20px 24px; }
+    .avatar { width: 72px; height: 72px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 28px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; border: 3px solid rgba(255,255,255,0.2); }
+    .badge { display: inline-block; background: rgba(255,255,255,0.14); padding: 4px 12px; border-radius: 99px; font-size: 12px; margin-top: 6px; }
+    .horario { font-size: 13px; color: #D1D5DB; margin-top: 10px; }
+    .body { padding: 20px; }
+    .promo-box { background: #FFF1F3; border: 1.5px dashed var(--primary); border-radius: 14px; padding: 14px; margin-bottom: 18px; text-align: left; }
+    .promo-tag { font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; }
+    .promo-text { font-size: 14px; font-weight: 600; margin: 6px 0 10px; color: var(--dark); }
+    .btn { display: block; width: 100%; padding: 14px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 15px; margin-bottom: 11px; transition: transform 0.15s; border: none; cursor: pointer; }
+    .btn:active { transform: scale(0.98); }
+    .btn-wa { background: #25D366; color: #fff; }
+    .btn-main { background: var(--dark); color: #fff; }
+    .btn-red { background: #F3F4F6; color: var(--dark); border: 1px solid #E5E7EB; }
+    .btn-promo { background: var(--primary); color: #fff; padding: 10px; font-size: 13px; margin-bottom: 0; text-align: center; }
+    .footer { padding: 14px; font-size: 12px; color: var(--muted); border-top: 1px solid #F0F0F5; }
+    .vencido { padding: 40px 24px; }
+  </style>
+</head>
+<body>
+  <div class="container" id="app">
+    <div style="padding: 40px; color: #6C7280;">Cargando tarjeta digital...</div>
+  </div>
+
+  <script>
+    const API_URL = "PEGA_AQUI_TU_URL_DE_APPS_SCRIPT_EXEC";
+    const params = new URLSearchParams(window.location.search);
+    const idNegocio = params.get("negocio");
+
+    async function cargarBio() {
+      const app = document.getElementById("app");
+      if (!idNegocio) {
+        app.innerHTML = "<div class='vencido'><h3>Enlace incompleto</h3><p>Falta el identificador del negocio.</p></div>";
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}?accion=bio&negocio=${encodeURIComponent(idNegocio)}`);
+        const data = await res.json();
+
+        if (data.status !== "activo") {
+          app.innerHTML = `
+            <div class="vencido">
+              <h2 style="color:#EE3355;">Tarjeta no disponible</h2>
+              <p>Este enlace pertenece a una membresía <b>CUPUN MAX</b> vencida o no habilitada.</p>
+            </div>`;
+          return;
+        }
+
+        const iniciales = (data.nombre || "CP").substring(0, 2).toUpperCase();
+        const esEnLinea = (data.modalidad || "").toLowerCase().includes("linea");
+        const etiquetaMod = esEnLinea ? "🌐 Negocio en Línea" : "📍 Local en Uruapan";
+        const textoBtnPrincipal = esEnLinea ? "🛍️ Ver Catálogo / Pedir" : "📍 Cómo llegar (Google Maps)";
+        const msgWA = encodeURIComponent(`Hola ${data.nombre}, vi su tarjeta digital en CUPUN y me gustaría más información.`);
+
+        app.innerHTML = `
+          <div class="header">
+            <div class="avatar">${iniciales}</div>
+            <h2 style="margin:0; font-size:22px;">${data.nombre}</h2>
+            <div class="badge">${data.segmento} • ${etiquetaMod}</div>
+            ${data.horario ? `<div class="horario">🕒 ${data.horario}</div>` : ""}
+          </div>
+          <div class="body">
+            ${data.descripcion ? `
+              <div class="promo-box">
+                <div class="promo-tag">🔥 Promoción Activa CUPUN</div>
+                <div class="promo-text">${data.descripcion}</div>
+                <a class="btn btn-promo" href="index.html?negocio=${encodeURIComponent(data.id_negocio)}">🎟️ Reclamar Cupón (${data.codigo})</a>
+              </div>` : ""}
+
+            <a class="btn btn-wa" href="https://wa.me/${data.whatsapp}?text=${msgWA}" target="_blank">💬 Contactar por WhatsApp</a>
+
+            ${data.link_principal ? `<a class="btn btn-main" href="${data.link_principal}" target="_blank">${textoBtnPrincipal}</a>` : ""}
+
+            ${data.link_redes ? `<a class="btn btn-red" href="${data.link_redes}" target="_blank">📲 Seguir en Redes Sociales</a>` : ""}
+
+            <button class="btn btn-red" onclick="compartirTarjeta('${data.nombre}')">📤 Compartir esta tarjeta</button>
+          </div>
+          <div class="footer">Impulsado por <b>CUPUN Uruapan</b> • Comercio Local</div>
+        `;
+      } catch (err) {
+        app.innerHTML = "<div class='vencido'><p>Error de conexión. Intenta de nuevo.</p></div>";
+      }
+    }
+
+    function compartirTarjeta(nombre) {
+      if (navigator.share) {
+        navigator.share({ title: nombre, text: `Conoce ${nombre} en CUPUN`, url: window.location.href });
+      } else {
+        navigator.clipboard.writeText(window.location.href);
+        alert("Enlace copiado para compartir.");
+      }
+    }
+
+    cargarBio();
+  </script>
+</body>
+</html>
