@@ -1,57 +1,246 @@
-<!-- Agrega este bloque dentro de calculadora.html (oculto por defecto y visible solo si data.nivel === "MAX") -->
-<div id="modulo-max-equilibrio" style="display:none; margin-top:24px; padding:18px; border-radius:16px; background:#FFF8F9; border:2px solid #EE3355;">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-    <h3 style="margin:0; color:#1E1E2C; font-size:17px;">📊 Punto de Equilibrio y Meta Diaria</h3>
-    <span style="background:#EE3355; color:#fff; font-size:11px; font-weight:700; padding:3px 9px; border-radius:99px;">EXCLUSIVO MAX</span>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora Inteligente | CUPUN</title>
+  <style>
+    :root {
+      --primary: #EE3355;
+      --dark: #1E1E2C;
+      --bg: #F6F7FB;
+      --card: #FFFFFF;
+      --muted: #6C7280;
+      --border: #E5E7EB;
+    }
+    * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--dark); padding: 20px 14px; }
+    .container { max-width: 560px; margin: 0 auto; background: var(--card); padding: 24px; border-radius: 18px; box-shadow: 0 10px 28px rgba(0,0,0,0.07); }
+    .header { text-align: center; margin-bottom: 22px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+    .badge-plan { display: inline-block; background: #FFF1F3; color: var(--primary); font-weight: 800; font-size: 11px; padding: 4px 12px; border-radius: 99px; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .header h1 { color: var(--dark); margin: 0; font-size: 22px; }
+    .header p { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px; color: var(--dark); }
+    input { width: 100%; padding: 11px 12px; border: 1px solid #D1D5DB; border-radius: 10px; font-size: 15px; transition: border-color 0.2s; }
+    input:focus { outline: none; border-color: var(--primary); }
+    .row-2 { display: flex; gap: 10px; }
+    .row-2 > div { flex: 1; }
+    .results { background: #FFF1F3; border-left: 4px solid var(--primary); padding: 16px; margin-top: 18px; border-radius: 12px; }
+    .results h3 { margin: 0 0 10px 0; color: var(--primary); font-size: 15px; }
+    .res-line { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; }
+    .res-line.destacado { font-size: 17px; font-weight: 800; color: var(--dark); border-top: 1px dashed rgba(238,51,85,0.3); padding-top: 8px; margin-top: 8px; }
+    .locked-screen { text-align: center; padding: 40px 22px; background: var(--card); border-radius: 18px; box-shadow: 0 10px 28px rgba(0,0,0,0.07); max-width: 480px; margin: 40px auto; }
+    .locked-screen h2 { color: var(--primary); margin-top: 0; }
+    .btn-renovar { display: inline-block; background: #25D366; color: #fff; padding: 13px 22px; text-decoration: none; border-radius: 10px; font-weight: 700; margin-top: 14px; font-size: 15px; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- PANTALLA DE CARGA -->
+  <div id="pantallaCargando" class="locked-screen">
+    <p style="color: var(--muted); font-weight: 600;">Verificando acceso de membresía CUPUN...</p>
   </div>
-  <p style="font-size:13px; color:#6C7280; margin-top:0;">Calcula cuántas ventas o servicios necesitas al mes y al día para cubrir tus gastos fijos y alcanzar tu meta.</p>
 
-  <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">Gastos fijos del mes (renta, luz, sueldos, internet) $</label>
-  <input type="number" id="pe_gastos" placeholder="Ej. 12000" oninput="calcularPE()" style="width:100%; padding:10px; border-radius:8px; border:1px solid #D1D5DB; margin-bottom:10px;" />
+  <!-- PANTALLA DE BLOQUEO (VENCIDO O NIVEL BASIC) -->
+  <div id="pantallaBloqueada" class="locked-screen hidden">
+    <h2 id="tituloBloqueo">🎟️ Acceso Restringido</h2>
+    <p id="mensajeBloqueo" style="color: var(--muted); line-height: 1.5;">Este servicio se encuentra inactivo o no está incluido en tu paquete actual.</p>
+    <a id="linkRenovar" href="#" class="btn-renovar" target="_blank">💬 Contactar por WhatsApp</a>
+  </div>
 
-  <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">Ganancia libre que quieres lograr al mes $</label>
-  <input type="number" id="pe_meta" placeholder="Ej. 8000" oninput="calcularPE()" style="width:100%; padding:10px; border-radius:8px; border:1px solid #D1D5DB; margin-bottom:10px;" />
-
-  <div style="display:flex; gap:10px; margin-bottom:12px;">
-    <div style="flex:1;">
-      <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Ganancia por venta ($)</label>
-      <input type="number" id="pe_utilidad_unit" placeholder="Ej. 85" oninput="calcularPE()" style="width:100%; padding:10px; border-radius:8px; border:1px solid #D1D5DB;" />
+  <!-- CONTENEDOR PRINCIPAL DE LA CALCULADORA (PRO Y MAX) -->
+  <div id="pantallaCalculadora" class="container hidden">
+    <div class="header">
+      <div class="badge-plan" id="lblPlan">MEMBRESÍA ACTIVA</div>
+      <h1 id="lblNombreNegocio">Calculadora de Precios</h1>
+      <p>Herramienta exclusiva de <strong style="color:var(--primary);">CUPUN</strong> • Vigencia: <span id="lblVigencia">--/--/----</span></p>
     </div>
-    <div style="flex:1;">
-      <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Días que abres al mes</label>
-      <input type="number" id="pe_dias" value="26" oninput="calcularPE()" style="width:100%; padding:10px; border-radius:8px; border:1px solid #D1D5DB;" />
+
+    <div class="form-group">
+      <label>Costo Base / Materia Prima / Insumo Principal ($):</label>
+      <input type="number" id="costoBase" placeholder="Ej. 18.00" oninput="calcular()" />
+    </div>
+
+    <div class="row-2">
+      <div class="form-group">
+        <label>Empaque / Extras ($):</label>
+        <input type="number" id="empaque" placeholder="Ej. 4.00" oninput="calcular()" />
+      </div>
+      <div class="form-group">
+        <label>Logística / Comisiones ($):</label>
+        <input type="number" id="logistica" placeholder="Ej. 2.00" oninput="calcular()" />
+      </div>
+    </div>
+
+    <div class="row-2">
+      <div class="form-group">
+        <label>Margen Deseado (%):</label>
+        <input type="number" id="margenDeseado" placeholder="Ej. 40" value="40" oninput="calcular()" />
+      </div>
+      <div class="form-group">
+        <label>Descuento Cupón (% opcional):</label>
+        <input type="number" id="descuentoCupon" placeholder="Ej. 10" value="0" oninput="calcular()" />
+      </div>
+    </div>
+
+    <div class="results">
+      <h3>📊 Resultados de tu Operación</h3>
+      <div class="res-line"><span>Costo Total Real:</span><strong>$<span id="resCostoTotal">0.00</span></strong></div>
+      <div class="res-line"><span>Precio Público Sugerido:</span><strong>$<span id="resPrecioSugerido">0.00</span></strong></div>
+      <div class="res-line"><span>Precio con Descuento Cupón:</span><strong>$<span id="resPrecioDescuento">0.00</span></strong></div>
+      <div class="res-line destacado"><span>Tu Utilidad Neta Real:</span><span style="color:var(--primary);">$<span id="resUtilidad">0.00</span></span></div>
+    </div>
+
+    <!-- MÓDULO EXCLUSIVO CUPUN MAX: PUNTO DE EQUILIBRIO Y META DIARIA -->
+    <div id="modulo-max-equilibrio" style="display:none; margin-top:24px; padding:18px; border-radius:16px; background:#FFF8F9; border:2px solid #EE3355;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3 style="margin:0; color:#1E1E2C; font-size:16px;">⚖️ Punto de Equilibrio y Meta Diaria</h3>
+        <span style="background:#EE3355; color:#fff; font-size:10px; font-weight:800; padding:3px 9px; border-radius:99px;">EXCLUSIVO MAX</span>
+      </div>
+      <p style="font-size:12.5px; color:#6C7280; margin-top:0;">Calcula cuántas ventas o servicios necesitas al mes y al día para cubrir tus gastos fijos y lograr tu meta.</p>
+
+      <div class="form-group">
+        <label>Gastos fijos del mes (renta, luz, sueldos, internet) $</label>
+        <input type="number" id="pe_gastos" placeholder="Ej. 12000" oninput="calcularPE()" />
+      </div>
+
+      <div class="form-group">
+        <label>Ganancia libre que quieres lograr al mes $</label>
+        <input type="number" id="pe_meta" placeholder="Ej. 8000" oninput="calcularPE()" />
+      </div>
+
+      <div class="row-2" style="margin-bottom:12px;">
+        <div>
+          <label>Ganancia por venta ($)</label>
+          <input type="number" id="pe_utilidad_unit" placeholder="Ej. 85" oninput="calcularPE()" />
+        </div>
+        <div>
+          <label>Días que abres al mes</label>
+          <input type="number" id="pe_dias" value="26" oninput="calcularPE()" />
+        </div>
+      </div>
+
+      <div id="pe_resultado" style="background:#1E1E2C; color:#fff; padding:14px; border-radius:12px; font-size:13.5px; line-height:1.6;">
+        Ingresa tus gastos fijos y ganancia por venta para ver tu meta diaria.
+      </div>
     </div>
   </div>
 
-  <div id="pe_resultado" style="background:#1E1E2C; color:#fff; padding:14px; border-radius:12px; font-size:14px; line-height:1.6;">
-    Ingresa tus gastos fijos y ganancia por venta para ver tu meta diaria.
-  </div>
-</div>
+  <script>
+    // =========================================================================
+    // 1. PEGA AQUÍ TU URL DE IMPLEMENTACIÓN DE GOOGLE APPS SCRIPT (/exec)
+    // =========================================================================
+    const API_URL = "https://script.google.com/macros/s/AKfycbwjTRREO_-YcLnRUZiJqxqEqsD6EGG4mmTLL6bn9vmq4_afbdx_M5YYrIIaLOWJepup4Q/exec";
 
-<script>
-  // Dentro de tu función donde validas la calculadora:
-  // if (data.nivel === "MAX") { document.getElementById("modulo-max-equilibrio").style.display = "block"; }
+    // Número de WhatsApp de soporte CUPUN para renovaciones o upgrades
+    const WHATSAPP_SOPORTE = "524521225072";
 
-  function calcularPE() {
-    const gastos = parseFloat(document.getElementById("pe_gastos").value) || 0;
-    const meta = parseFloat(document.getElementById("pe_meta").value) || 0;
-    const utilidad = parseFloat(document.getElementById("pe_utilidad_unit").value) || 0;
-    const dias = parseFloat(document.getElementById("pe_dias").value) || 26;
-    const box = document.getElementById("pe_resultado");
+    async function validarAcceso() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const idCliente = urlParams.get("cliente") || urlParams.get("id");
 
-    if (gastos <= 0 || utilidad <= 0) {
-      box.innerHTML = "Ingresa tus gastos fijos y ganancia por venta para ver tu meta diaria.";
-      return;
+      if (!idCliente) {
+        mostrarBloqueo("Enlace incompleto", "No se detectó un identificador de cliente válido en el enlace.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}?accion=calculadora&cliente=${encodeURIComponent(idCliente)}`);
+        const data = await response.json();
+
+        document.getElementById("pantallaCargando").classList.add("hidden");
+
+        if (data.status === "activo") {
+          document.getElementById("pantallaCalculadora").classList.remove("hidden");
+          document.getElementById("lblNombreNegocio").innerText = data.nombre || "Calculadora Inteligente";
+          document.getElementById("lblVigencia").innerText = data.vigencia || "";
+          document.getElementById("lblPlan").innerText = `CUPUN - ${data.nivel}`;
+
+          // Si el paquete es MAX, desbloquea Punto de Equilibrio y Meta Diaria
+          if (data.nivel === "MAX") {
+            document.getElementById("modulo-max-equilibrio").style.display = "block";
+          }
+        } else if (data.status === "nivel_insuficiente") {
+          mostrarBloqueo(
+            "🚀 Herramienta para CUPUN Pro y MAX",
+            `Hola <strong>${data.nombre || ""}</strong>, tu paquete actual (<strong>CUPUN - BASIC</strong>) no incluye la calculadora inteligente. Actualiza tu plan a <strong>CUPUN - PRO</strong> o <strong>CUPUN - MAX</strong> para activarla.`,
+            `Hola, soy ${data.nombre || "cliente CUPUN"} y me gustaría subir mi paquete a CUPUN Pro o MAX para activar la calculadora.`
+          );
+        } else {
+          mostrarBloqueo(
+            "🎟️ Membresía Vencida",
+            `El acceso para <strong>${data.nombre || "este negocio"}</strong> se encuentra inactivo por vigencia. Renueva tu mensualidad para seguir operando.`,
+            `Hola, soy ${data.nombre || "cliente CUPUN"} y quiero renovar mi membresía para reactivar mi calculadora.`
+          );
+        }
+      } catch (error) {
+        console.error("Error al validar:", error);
+        document.getElementById("pantallaCargando").classList.add("hidden");
+        mostrarBloqueo("Error de conexión", "No se pudo verificar el estatus de tu cuenta. Revisa tu conexión e intenta de nuevo.");
+      }
     }
 
-    const ventasEquilibrioMes = Math.ceil(gastos / utilidad);
-    const ventasEquilibrioDia = (ventasEquilibrioMes / dias).toFixed(1);
-    const ventasMetaMes = Math.ceil((gastos + meta) / utilidad);
-    const ventasMetaDia = (ventasMetaMes / dias).toFixed(1);
+    function mostrarBloqueo(titulo, mensaje, textoWA) {
+      document.getElementById("pantallaCargando").classList.add("hidden");
+      document.getElementById("tituloBloqueo").innerText = titulo;
+      document.getElementById("mensajeBloqueo").innerHTML = mensaje;
+      const msg = encodeURIComponent(textoWA || "Hola, necesito ayuda con mi acceso a la calculadora CUPUN.");
+      document.getElementById("linkRenovar").href = `https://wa.me/${WHATSAPP_SOPORTE}?text=${msg}`;
+      document.getElementById("pantallaBloqueada").classList.remove("hidden");
+    }
 
-    box.innerHTML = `
-      <div>⚖️ <b>Para salir tablas (Punto de Equilibrio):</b><br>Necesitas <b>${ventasEquilibrioMes} ventas al mes</b> (${ventasEquilibrioDia} al día).</div>
-      ${meta > 0 ? `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.15);">🚀 <b>Para lograr tu meta de $${meta.toLocaleString()}:</b><br>Necesitas <b>${ventasMetaMes} ventas al mes</b> (${ventasMetaDia} al día).</div>` : ""}
-    `;
-  }
-</script>
+    function calcular() {
+      const base = parseFloat(document.getElementById("costoBase").value) || 0;
+      const emp = parseFloat(document.getElementById("empaque").value) || 0;
+      const log = parseFloat(document.getElementById("logistica").value) || 0;
+      const margen = parseFloat(document.getElementById("margenDeseado").value) || 0;
+      const desc = parseFloat(document.getElementById("descuentoCupon").value) || 0;
+
+      const costoTotal = base + emp + log;
+      const divisor = 1 - (margen / 100);
+      const precioSugerido = divisor > 0 ? costoTotal / divisor : costoTotal;
+      const precioConDescuento = precioSugerido * (1 - (desc / 100));
+      const utilidadReal = precioConDescuento - costoTotal;
+
+      document.getElementById("resCostoTotal").innerText = costoTotal.toFixed(2);
+      document.getElementById("resPrecioSugerido").innerText = precioSugerido.toFixed(2);
+      document.getElementById("resPrecioDescuento").innerText = precioConDescuento.toFixed(2);
+      document.getElementById("resUtilidad").innerText = utilidadReal.toFixed(2);
+
+      // Sincroniza automáticamente la ganancia unitaria hacia el simulador MAX si hay utilidad positiva
+      const inputUtilidadPE = document.getElementById("pe_utilidad_unit");
+      if (inputUtilidadPE && utilidadReal > 0) {
+        inputUtilidadPE.value = utilidadReal.toFixed(2);
+        calcularPE();
+      }
+    }
+
+    function calcularPE() {
+      const gastos = parseFloat(document.getElementById("pe_gastos").value) || 0;
+      const meta = parseFloat(document.getElementById("pe_meta").value) || 0;
+      const utilidad = parseFloat(document.getElementById("pe_utilidad_unit").value) || 0;
+      const dias = parseFloat(document.getElementById("pe_dias").value) || 26;
+      const box = document.getElementById("pe_resultado");
+
+      if (gastos <= 0 || utilidad <= 0) {
+        box.innerHTML = "Ingresa tus gastos fijos y ganancia por venta para ver tu meta diaria.";
+        return;
+      }
+
+      const ventasEquilibrioMes = Math.ceil(gastos / utilidad);
+      const ventasEquilibrioDia = (ventasEquilibrioMes / dias).toFixed(1);
+      const ventasMetaMes = Math.ceil((gastos + meta) / utilidad);
+      const ventasMetaDia = (ventasMetaMes / dias).toFixed(1);
+
+      box.innerHTML = `
+        <div>⚖️ <b>Para salir tablas (Punto de Equilibrio):</b><br>Necesitas <b>${ventasEquilibrioMes} ventas al mes</b> (${ventasEquilibrioDia} al día).</div>
+        ${meta > 0 ? `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.15);">🚀 <b>Para lograr tu meta de $${meta.toLocaleString()}:</b><br>Necesitas <b>${ventasMetaMes} ventas al mes</b> (${ventasMetaDia} al día).</div>` : ""}
+      `;
+    }
+
+    validarAcceso();
+  </script>
+</body>
+</html>
