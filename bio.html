@@ -75,15 +75,18 @@
             <h2 style="margin:0; font-size:22px;">${data.nombre}</h2>
             <div class="badge">${data.segmento} • ${etiquetaMod}</div>
             ${data.horario ? `<div class="horario">🕒 ${data.horario}</div>` : ""}
+         
           </div>
           <div class="body">
+           /* Sección temporalmente oculta: Promoción Activa CUPUN
             ${data.descripcion ? `
-              <div class="promo-box">
+                <div class="promo-box">
                 <div class="promo-tag">🔥 Promoción Activa CUPUN</div>
                 <div class="promo-text">${data.descripcion}</div>
                 <a class="btn btn-promo" href="index.html?negocio=${encodeURIComponent(data.id_negocio)}">🎟️ Reclamar Cupón (${data.codigo})</a>
               </div>` : ""}
-
+          */
+                
             <a class="btn btn-wa" href="https://wa.me/${data.whatsapp}?text=${msgWA}" target="_blank">💬 Contactar por WhatsApp</a>
 
             ${data.link_principal ? `<a class="btn btn-main" href="${data.link_principal}" target="_blank">${textoBtnPrincipal}</a>` : ""}
