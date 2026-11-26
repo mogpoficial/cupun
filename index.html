@@ -23,7 +23,7 @@
         
         .btn-wa { display: block; background-color: #25d366; color: white; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; margin-top: 12px; width: 100%; box-sizing: border-box; font-size: 15px; text-align: center; transition: background 0.2s; }
         .btn-wa:hover { background-color: #20ba5a; }
-        .btn-wa.reserve { background-color: #0284c7; } /* Azul elegante para distinguir la reserva */
+        .btn-wa.reserve { background-color: #0284c7; }
         .btn-wa.reserve:hover { background-color: #0369a1; }
         
         .loading { font-size: 16px; color: #64748b; }
@@ -36,8 +36,18 @@
     </div>
 
     <script>
-        // REEMPLAZA ESTA LÍNEA CON TU URL REAL DE APPS SCRIPT
         const API_URL = "https://script.google.com/macros/s/AKfycbwjTRREO_-YcLnRUZiJqxqEqsD6EGG4mmTLL6bn9vmq4_afbdx_M5YYrIIaLOWJepup4Q/exec";
+        let cuponActual = null;
+
+        function registrarClicMetricas(idNegocio) {
+            if (!idNegocio) return;
+            const urlMetrica = `${API_URL}?negocio=${encodeURIComponent(idNegocio)}&accion=clic`;
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon(urlMetrica);
+            } else {
+                fetch(urlMetrica, { method: "GET", mode: "no-cors", keepalive: true }).catch(() => {});
+            }
+        }
 
         async function verificarCupon() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -50,17 +60,22 @@
             }
 
             try {
-                const response = await fetch(`${API_URL}?negocio=${negocio}`);
+                const response = await fetch(`${API_URL}?negocio=${encodeURIComponent(negocio)}`);
                 const result = await response.json();
 
                 if (result.success) {
                     const n = result.data;
+                    cuponActual = {
+                        idNegocio: n.idNegocio || n.id_negocio || negocio,
+                        telefono: String(n.telefono || '').replace(/[^0-9]/g, ''),
+                        descripcion: String(n.descripcion || '').replace(/\s+/g, ' ').trim(),
+                        codigoUnico: String(n.codigoUnico || '')
+                    };
+
                     const isPagado = String(n.estatus).toLowerCase() === 'pagado';
                     
                     let interactivoHTML = '';
-                    if (isPagado && n.telefono) {
-                        const numLimpio = String(n.telefono).replace(/[^0-9]/g, '');
-                        
+                    if (isPagado && cuponActual.telefono) {
                         interactivoHTML = `
                             <div class="booking-section">
                                 <label>📅 ¿Deseas agendar fecha y hora? (Opcional)</label>
@@ -69,7 +84,7 @@
                                     <input type="time" id="cita-hora">
                                 </div>
                             </div>
-                            <a href="#" id="btn-accion" class="btn-wa" onclick="enviarWhatsApp(event, '${numLimpio}', '${n.descripcion}', '${n.codigoUnico}')">
+                            <a href="#" id="btn-accion" class="btn-wa" onclick="enviarWhatsApp(event)">
                                 💬 Reclamar Cupón por WhatsApp
                             </a>
                         `;
@@ -92,8 +107,7 @@
                         ${interactivoHTML}
                     `;
 
-                    // Si el usuario selecciona fecha/hora, el botón cambia dinámicamente de texto y color
-                    if (isPagado && n.telefono) {
+                    if (isPagado && cuponActual.telefono) {
                         const fechaInput = document.getElementById('cita-fecha');
                         const horaInput = document.getElementById('cita-hora');
                         const btnAccion = document.getElementById('btn-accion');
@@ -120,20 +134,27 @@
             }
         }
 
-        // Función que arma el mensaje dinámico para WhatsApp dependiendo de si eligió cita o solo cupón
-        function enviarWhatsApp(event, telefono, descripcion, codigoUnico) {
+        function enviarWhatsApp(event) {
             event.preventDefault();
-            const fecha = document.getElementById('cita-fecha').value;
-            const hora = document.getElementById('cita-hora').value;
+            if (!cuponActual || !cuponActual.telefono) return;
+
+            // 1. Registra el clic en RESULTADOS
+            registrarClicMetricas(cuponActual.idNegocio);
+
+            // 2. Arma el mensaje y abre WhatsApp
+            const fechaInput = document.getElementById('cita-fecha');
+            const horaInput = document.getElementById('cita-hora');
+            const fecha = fechaInput ? fechaInput.value : '';
+            const hora = horaInput ? horaInput.value : '';
 
             let mensaje = "";
             if (fecha || hora) {
-                mensaje = `¡Hola! Vi la promoción "${descripcion}" en Cupun, mi código es ${codigoUnico} y quiero *reservar cita* para el día ${fecha || 'por definir'} a las ${hora || 'por definir'}.`;
+                mensaje = `¡Hola! Vi la promoción "${cuponActual.descripcion}" en Cupun, mi código es ${cuponActual.codigoUnico} y quiero *reservar cita* para el día ${fecha || 'por definir'} a las ${hora || 'por definir'}.`;
             } else {
-                mensaje = `¡Hola! Vi la promoción "${descripcion}" en Cupun y quiero hacer válido mi cupón con código: ${codigoUnico}`;
+                mensaje = `¡Hola! Vi la promoción "${cuponActual.descripcion}" en Cupun y quiero hacer válido mi cupón con código: ${cuponActual.codigoUnico}`;
             }
 
-            const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
+            const url = `https://wa.me/${cuponActual.telefono}?text=${encodeURIComponent(mensaje)}`;
             window.open(url, '_blank');
         }
 
