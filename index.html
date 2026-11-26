@@ -38,15 +38,33 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwjTRREO_-YcLnRUZiJqxqEqsD6EGG4mmTLL6bn9vmq4_afbdx_M5YYrIIaLOWJepup4Q/exec";
         let cuponActual = null;
+        let enviandoClic = false;
 
-        function registrarClicMetricas(idNegocio) {
+        function escapeHTML(valor) {
+            return String(valor || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        async function registrarClicMetricas(idNegocio) {
             if (!idNegocio) return;
             const urlMetrica = `${API_URL}?negocio=${encodeURIComponent(idNegocio)}&accion=clic`;
+
             if (navigator.sendBeacon) {
-                navigator.sendBeacon(urlMetrica);
-            } else {
-                fetch(urlMetrica, { method: "GET", mode: "no-cors", keepalive: true }).catch(() => {});
+                try {
+                    navigator.sendBeacon(urlMetrica);
+                } catch (e) {}
             }
+
+            try {
+                await Promise.race([
+                    fetch(urlMetrica, { method: "GET", mode: "no-cors", keepalive: true }),
+                    new Promise(resolve => setTimeout(resolve, 600))
+                ]);
+            } catch (e) {}
         }
 
         async function verificarCupon() {
@@ -66,10 +84,10 @@
                 if (result.success) {
                     const n = result.data;
                     cuponActual = {
-                        idNegocio: n.idNegocio || n.id_negocio || negocio,
+                        idNegocio: String(n.idNegocio || n.id_negocio || negocio).trim(),
                         telefono: String(n.telefono || '').replace(/[^0-9]/g, ''),
                         descripcion: String(n.descripcion || '').replace(/\s+/g, ' ').trim(),
-                        codigoUnico: String(n.codigoUnico || '')
+                        codigoUnico: String(n.codigoUnico || '').trim()
                     };
 
                     const isPagado = String(n.estatus).toLowerCase() === 'pagado';
@@ -96,13 +114,13 @@
                         <div class="badge ${isPagado ? 'badge-valid' : 'badge-invalid'}">
                             ${isPagado ? 'Afiliado Verificado Cupun' : 'Suscripción Vencida'}
                         </div>
-                        <h3 style="margin:5px 0; color:#0f172a;">${n.nombre}</h3>
-                        <p style="color:#64748b; font-size:14px; text-transform: uppercase;">${n.segmento}</p>
+                        <h3 style="margin:5px 0; color:#0f172a;">${escapeHTML(n.nombre)}</h3>
+                        <p style="color:#64748b; font-size:14px; text-transform: uppercase;">${escapeHTML(n.segmento)}</p>
                         <hr style="border:0; border-top:1px solid #f1f5f9; margin:15px 0;">
-                        <p style="font-size:14px; color:#334155;"><strong>Promoción:</strong> ${n.descripcion}</p>
-                        <p style="font-size:12px; color:#94a3b8;">Vigencia: ${n.vigencia}</p>
+                        <p style="font-size:14px; color:#334155;"><strong>Promoción:</strong> ${escapeHTML(cuponActual.descripcion)}</p>
+                        <p style="font-size:12px; color:#94a3b8;">Vigencia: ${escapeHTML(n.vigencia)}</p>
                         <div class="code-box">
-                            Código único: <br><span style="color:#2563eb; font-size:18px;">${n.codigoUnico}</span>
+                            Código único: <br><span style="color:#2563eb; font-size:18px;">${escapeHTML(cuponActual.codigoUnico)}</span>
                         </div>
                         ${interactivoHTML}
                     `;
@@ -134,14 +152,11 @@
             }
         }
 
-        function enviarWhatsApp(event) {
+        async function enviarWhatsApp(event) {
             event.preventDefault();
-            if (!cuponActual || !cuponActual.telefono) return;
+            if (!cuponActual || !cuponActual.telefono || enviandoClic) return;
+            enviandoClic = true;
 
-            // 1. Registra el clic en RESULTADOS
-            registrarClicMetricas(cuponActual.idNegocio);
-
-            // 2. Arma el mensaje y abre WhatsApp
             const fechaInput = document.getElementById('cita-fecha');
             const horaInput = document.getElementById('cita-hora');
             const fecha = fechaInput ? fechaInput.value : '';
@@ -154,8 +169,12 @@
                 mensaje = `¡Hola! Vi la promoción "${cuponActual.descripcion}" en Cupun y quiero hacer válido mi cupón con código: ${cuponActual.codigoUnico}`;
             }
 
-            const url = `https://wa.me/${cuponActual.telefono}?text=${encodeURIComponent(mensaje)}`;
-            window.open(url, '_blank');
+            const urlWa = `https://wa.me/${cuponActual.telefono}?text=${encodeURIComponent(mensaje)}`;
+
+            await registrarClicMetricas(cuponActual.idNegocio);
+
+            window.location.href = urlWa;
+            setTimeout(() => { enviandoClic = false; }, 1500);
         }
 
         verificarCupon();
